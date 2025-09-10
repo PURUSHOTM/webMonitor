@@ -178,11 +178,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings endpoints
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.getSettings();
+      const settingsObject: Record<string, string> = {};
+      settings.forEach(setting => {
+        settingsObject[setting.key] = setting.value;
+      });
+      res.json(settingsObject);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
   app.put("/api/settings/email", async (req, res) => {
     try {
-      // Note: In a real app, you'd save these to a database or config file
-      // For now, just return success
-      res.json({ success: true });
+      const { enableNotifications, fromEmail, notificationEmail } = req.body;
+      
+      // Save each setting individually
+      await storage.setSetting('email.enableNotifications', enableNotifications?.toString() || 'true');
+      await storage.setSetting('email.fromEmail', fromEmail || 'notifications@webmonitor.com');
+      await storage.setSetting('email.notificationEmail', notificationEmail || 'admin@example.com');
+      
+      res.json({ success: true, message: "Email settings saved successfully" });
     } catch (error) {
       res.status(500).json({ error: "Failed to save email settings" });
     }
@@ -190,9 +208,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/settings/monitoring", async (req, res) => {
     try {
-      // Note: In a real app, you'd save these to a database or config file
-      // For now, just return success
-      res.json({ success: true });
+      const { defaultCheckInterval, enableSlowResponseAlerts, slowResponseThreshold, retryAttempts } = req.body;
+      
+      // Save monitoring settings
+      await storage.setSetting('monitoring.defaultCheckInterval', defaultCheckInterval?.toString() || '5');
+      await storage.setSetting('monitoring.enableSlowResponseAlerts', enableSlowResponseAlerts?.toString() || 'false');
+      await storage.setSetting('monitoring.slowResponseThreshold', slowResponseThreshold?.toString() || '3000');
+      await storage.setSetting('monitoring.retryAttempts', retryAttempts?.toString() || '3');
+      
+      res.json({ success: true, message: "Monitoring settings saved successfully" });
     } catch (error) {
       res.status(500).json({ error: "Failed to save monitoring settings" });
     }
@@ -203,9 +227,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import email service
       const { sendEmail } = await import("./services/email.js");
       
+      // Get email settings from database
+      const notificationEmailSetting = await storage.getSetting('email.notificationEmail');
+      const fromEmailSetting = await storage.getSetting('email.fromEmail');
+      
+      const toEmail = notificationEmailSetting?.value || process.env.NOTIFICATION_EMAIL || "admin@example.com";
+      const fromEmail = fromEmailSetting?.value || process.env.FROM_EMAIL || "notifications@webmonitor.com";
+      
       const success = await sendEmail({
-        to: process.env.NOTIFICATION_EMAIL || "admin@example.com",
-        from: process.env.FROM_EMAIL || "notifications@webmonitor.com",
+        to: toEmail,
+        from: fromEmail,
         subject: "Test Email from WebMonitor Pro",
         text: "This is a test email to verify your email configuration is working properly.",
         html: `

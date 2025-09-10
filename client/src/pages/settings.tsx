@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,11 @@ export default function Settings() {
     queryKey: ["/api/websites"],
   });
 
+  // Load persisted settings
+  const { data: savedSettings = {} } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings"],
+  });
+
   // Form for email settings
   const {
     register: registerEmail,
@@ -71,6 +76,7 @@ export default function Settings() {
     setValue: setEmailValue,
     watch: watchEmail,
     formState: { errors: emailErrors },
+    reset: resetEmailForm,
   } = useForm<EmailSettings>({
     defaultValues: {
       fromEmail: "notifications@webmonitor.com",
@@ -79,6 +85,17 @@ export default function Settings() {
     },
   });
 
+  // Update form values when settings are loaded
+  useEffect(() => {
+    if (savedSettings && Object.keys(savedSettings).length > 0) {
+      resetEmailForm({
+        fromEmail: savedSettings["email.fromEmail"] || "notifications@webmonitor.com",
+        toEmail: savedSettings["email.notificationEmail"] || "",
+        enabled: savedSettings["email.enableNotifications"] !== "false",
+      });
+    }
+  }, [savedSettings, resetEmailForm]);
+
   // Form for monitoring settings
   const {
     register: registerMonitoring,
@@ -86,6 +103,7 @@ export default function Settings() {
     setValue: setMonitoringValue,
     watch: watchMonitoring,
     formState: { errors: monitoringErrors },
+    reset: resetMonitoringForm,
   } = useForm<MonitoringSettings>({
     defaultValues: {
       defaultCheckInterval: 5,
@@ -95,14 +113,30 @@ export default function Settings() {
     },
   });
 
+  // Update monitoring form values when settings are loaded
+  useEffect(() => {
+    if (savedSettings && Object.keys(savedSettings).length > 0) {
+      resetMonitoringForm({
+        defaultCheckInterval: parseInt(savedSettings["monitoring.defaultCheckInterval"] || "5"),
+        maxResponseTime: parseInt(savedSettings["monitoring.slowResponseThreshold"] || "30000"),
+        enableGlobalNotifications: savedSettings["monitoring.enableSlowResponseAlerts"] !== "false",
+        retryAttempts: parseInt(savedSettings["monitoring.retryAttempts"] || "3"),
+      });
+    }
+  }, [savedSettings, resetMonitoringForm]);
+
   const saveEmailSettings = useMutation({
     mutationFn: async (data: EmailSettings) => {
-      // Note: You'll need to implement these endpoints in your backend
-      await apiRequest("PUT", "/api/settings/email", data);
+      await apiRequest("PUT", "/api/settings/email", {
+        enableNotifications: data.enabled,
+        fromEmail: data.fromEmail,
+        notificationEmail: data.toEmail,
+      });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Email settings saved successfully",
       });
     },
@@ -117,9 +151,15 @@ export default function Settings() {
 
   const saveMonitoringSettings = useMutation({
     mutationFn: async (data: MonitoringSettings) => {
-      await apiRequest("PUT", "/api/settings/monitoring", data);
+      await apiRequest("PUT", "/api/settings/monitoring", {
+        defaultCheckInterval: data.defaultCheckInterval,
+        enableSlowResponseAlerts: data.enableGlobalNotifications,
+        slowResponseThreshold: data.maxResponseTime,
+        retryAttempts: data.retryAttempts,
+      });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
         title: "Success",
         description: "Monitoring settings saved successfully",

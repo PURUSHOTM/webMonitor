@@ -1,4 +1,4 @@
-import { type Website, type InsertWebsite, type MonitoringResult, type InsertMonitoringResult, type Notification, type InsertNotification } from "@shared/schema";
+import { type Website, type InsertWebsite, type MonitoringResult, type InsertMonitoringResult, type Notification, type InsertNotification, type Setting, type InsertSetting } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db, schema } from './db';
 import { eq, desc, and } from 'drizzle-orm';
@@ -23,6 +23,11 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationEmailSent(id: string): Promise<boolean>;
   clearAllNotifications(): Promise<boolean>;
+
+  // Settings operations
+  getSetting(key: string): Promise<Setting | undefined>;
+  setSetting(key: string, value: string): Promise<Setting>;
+  getSettings(): Promise<Setting[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -250,6 +255,33 @@ export class DatabaseStorage implements IStorage {
   async clearAllNotifications(): Promise<boolean> {
     await db.delete(schema.notifications);
     return true;
+  }
+
+  // Settings operations
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const result = await db.select().from(schema.settings).where(eq(schema.settings.key, key)).limit(1);
+    return result[0];
+  }
+
+  async setSetting(key: string, value: string): Promise<Setting> {
+    const existing = await this.getSetting(key);
+    
+    if (existing) {
+      const result = await db.update(schema.settings)
+        .set({ value, updatedAt: new Date() })
+        .where(eq(schema.settings.key, key))
+        .returning();
+      return result[0];
+    } else {
+      const result = await db.insert(schema.settings)
+        .values({ key, value })
+        .returning();
+      return result[0];
+    }
+  }
+
+  async getSettings(): Promise<Setting[]> {
+    return await db.select().from(schema.settings).orderBy(schema.settings.key);
   }
 }
 
