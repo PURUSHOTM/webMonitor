@@ -1,5 +1,7 @@
 import { type Website, type InsertWebsite, type MonitoringResult, type InsertMonitoringResult, type Notification, type InsertNotification } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db, schema } from './db';
+import { eq, desc, and } from 'drizzle-orm';
 
 export interface IStorage {
   // Website operations
@@ -152,4 +154,103 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  // Website operations
+  async getWebsite(id: string): Promise<Website | undefined> {
+    const result = await db.select().from(schema.websites).where(eq(schema.websites.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getWebsites(): Promise<Website[]> {
+    return await db.select().from(schema.websites).orderBy(desc(schema.websites.createdAt));
+  }
+
+  async createWebsite(insertWebsite: InsertWebsite): Promise<Website> {
+    const result = await db.insert(schema.websites).values(insertWebsite).returning();
+    return result[0];
+  }
+
+  async updateWebsite(id: string, updateData: Partial<Website>): Promise<Website | undefined> {
+    const result = await db.update(schema.websites)
+      .set(updateData)
+      .where(eq(schema.websites.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteWebsite(id: string): Promise<boolean> {
+    const result = await db.delete(schema.websites).where(eq(schema.websites.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Monitoring results operations
+  async getMonitoringResult(id: string): Promise<MonitoringResult | undefined> {
+    const result = await db.select().from(schema.monitoringResults).where(eq(schema.monitoringResults.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getMonitoringResults(websiteId?: string): Promise<MonitoringResult[]> {
+    if (websiteId) {
+      return await db.select().from(schema.monitoringResults)
+        .where(eq(schema.monitoringResults.websiteId, websiteId))
+        .orderBy(desc(schema.monitoringResults.checkedAt));
+    }
+    return await db.select().from(schema.monitoringResults)
+      .orderBy(desc(schema.monitoringResults.checkedAt));
+  }
+
+  async createMonitoringResult(insertResult: InsertMonitoringResult): Promise<MonitoringResult> {
+    const result = await db.insert(schema.monitoringResults).values(insertResult).returning();
+    return result[0];
+  }
+
+  async getLatestMonitoringResults(): Promise<MonitoringResult[]> {
+    // Get the latest result for each website
+    const results = await db.select().from(schema.monitoringResults)
+      .orderBy(desc(schema.monitoringResults.checkedAt));
+    
+    const latestByWebsite = new Map<string, MonitoringResult>();
+    
+    for (const result of results) {
+      if (!latestByWebsite.has(result.websiteId)) {
+        latestByWebsite.set(result.websiteId, result);
+      }
+    }
+    
+    return Array.from(latestByWebsite.values());
+  }
+
+  async getMonitoringResultsForWebsite(websiteId: string, limit = 100): Promise<MonitoringResult[]> {
+    return await db.select().from(schema.monitoringResults)
+      .where(eq(schema.monitoringResults.websiteId, websiteId))
+      .orderBy(desc(schema.monitoringResults.checkedAt))
+      .limit(limit);
+  }
+
+  // Notification operations
+  async getNotifications(limit = 100): Promise<Notification[]> {
+    return await db.select().from(schema.notifications)
+      .orderBy(desc(schema.notifications.createdAt))
+      .limit(limit);
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const result = await db.insert(schema.notifications).values(insertNotification).returning();
+    return result[0];
+  }
+
+  async markNotificationEmailSent(id: string): Promise<boolean> {
+    const result = await db.update(schema.notifications)
+      .set({ emailSent: true })
+      .where(eq(schema.notifications.id, id));
+    return result.rowCount > 0;
+  }
+
+  async clearAllNotifications(): Promise<boolean> {
+    await db.delete(schema.notifications);
+    return true;
+  }
+}
+
+export const storage = new DatabaseStorage();
