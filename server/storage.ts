@@ -20,6 +20,7 @@ export interface IStorage {
   getNotifications(limit?: number): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationEmailSent(id: string): Promise<boolean>;
+  clearAllNotifications(): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -142,6 +143,11 @@ export class MemStorage implements IStorage {
     if (!notification) return false;
 
     this.notifications.set(id, { ...notification, emailSent: true });
+    return true;
+  }
+
+  async clearAllNotifications(): Promise<boolean> {
+    this.notifications.clear();
     return true;
   }
 }

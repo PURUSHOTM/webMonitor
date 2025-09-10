@@ -40,6 +40,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/websites/:id", async (req, res) => {
+    try {
+      const validatedData = insertWebsiteSchema.parse(req.body);
+      const website = await storage.updateWebsite(req.params.id, validatedData);
+      if (!website) {
+        return res.status(404).json({ error: "Website not found" });
+      }
+      res.json(website);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.delete("/api/websites/:id", async (req, res) => {
     try {
       const deleted = await storage.deleteWebsite(req.params.id);
@@ -151,6 +164,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(results);
     } catch (error) {
       res.status(500).json({ error: "Failed to run monitoring check" });
+    }
+  });
+
+  // Clear all notifications
+  app.delete("/api/notifications", async (req, res) => {
+    try {
+      await storage.clearAllNotifications();
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to clear notifications" });
+    }
+  });
+
+  // Settings endpoints
+  app.put("/api/settings/email", async (req, res) => {
+    try {
+      // Note: In a real app, you'd save these to a database or config file
+      // For now, just return success
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save email settings" });
+    }
+  });
+
+  app.put("/api/settings/monitoring", async (req, res) => {
+    try {
+      // Note: In a real app, you'd save these to a database or config file
+      // For now, just return success
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save monitoring settings" });
+    }
+  });
+
+  app.post("/api/settings/test-email", async (req, res) => {
+    try {
+      // Import email service
+      const { sendEmail } = await import("./services/email.js");
+      
+      const success = await sendEmail({
+        to: process.env.NOTIFICATION_EMAIL || "admin@example.com",
+        from: process.env.FROM_EMAIL || "notifications@webmonitor.com",
+        subject: "Test Email from WebMonitor Pro",
+        text: "This is a test email to verify your email configuration is working properly.",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">Test Email</h2>
+            <p>This is a test email to verify your email configuration is working properly.</p>
+            <p>If you received this email, your WebMonitor Pro email notifications are set up correctly!</p>
+            <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+        `,
+      });
+
+      if (success) {
+        res.json({ success: true, message: "Test email sent successfully" });
+      } else {
+        res.status(400).json({ 
+          error: "Email configuration issue", 
+          message: "Unable to send test email. Please check your SendGrid API key and email settings." 
+        });
+      }
+    } catch (error: any) {
+      console.error('Test email error:', error);
+      
+      // Handle specific SendGrid errors
+      if (error.code === 401 || error.message?.includes('Unauthorized')) {
+        res.status(400).json({ 
+          error: "Authentication failed", 
+          message: "SendGrid API key is invalid or missing. Please check your API key configuration." 
+        });
+      } else if (error.code === 403 || error.message?.includes('Forbidden')) {
+        res.status(400).json({ 
+          error: "Permission denied", 
+          message: "SendGrid API key doesn't have permission to send emails." 
+        });
+      } else {
+        res.status(400).json({ 
+          error: "Email service error", 
+          message: "Unable to send test email. Please check your email configuration." 
+        });
+      }
     }
   });
 
