@@ -30,7 +30,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Key,
-  Loader2
+  Loader2,
+  Phone
 } from "lucide-react";
 import type { Website } from "@shared/schema";
 
@@ -38,6 +39,12 @@ interface EmailSettings {
   fromEmail: string;
   toEmail: string;
   enabled: boolean;
+}
+
+interface SMSSettings {
+  phoneNumber: string;
+  enabled: boolean;
+  enableCriticalOnly: boolean;
 }
 
 interface MonitoringSettings {
@@ -56,6 +63,7 @@ interface UISettings {
 export default function Settings() {
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
   const [testEmailLoading, setTestEmailLoading] = useState(false);
+  const [testSMSLoading, setTestSMSLoading] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -125,6 +133,33 @@ export default function Settings() {
     }
   }, [savedSettings, resetMonitoringForm]);
 
+  // Form for SMS settings
+  const {
+    register: registerSMS,
+    handleSubmit: handleSMSSubmit,
+    setValue: setSMSValue,
+    watch: watchSMS,
+    formState: { errors: smsErrors },
+    reset: resetSMSForm,
+  } = useForm<SMSSettings>({
+    defaultValues: {
+      phoneNumber: "",
+      enabled: false,
+      enableCriticalOnly: false,
+    },
+  });
+
+  // Update SMS form values when settings are loaded
+  useEffect(() => {
+    if (savedSettings && Object.keys(savedSettings).length > 0) {
+      resetSMSForm({
+        phoneNumber: savedSettings["sms.phoneNumber"] || "",
+        enabled: savedSettings["sms.enableNotifications"] === "true",
+        enableCriticalOnly: savedSettings["sms.enableCriticalOnly"] === "true",
+      });
+    }
+  }, [savedSettings, resetSMSForm]);
+
   const saveEmailSettings = useMutation({
     mutationFn: async (data: EmailSettings) => {
       await apiRequest("PUT", "/api/settings/email", {
@@ -174,6 +209,30 @@ export default function Settings() {
     },
   });
 
+  const saveSMSSettings = useMutation({
+    mutationFn: async (data: SMSSettings) => {
+      await apiRequest("PUT", "/api/settings/sms", {
+        enableNotifications: data.enabled,
+        phoneNumber: data.phoneNumber,
+        enableCriticalOnly: data.enableCriticalOnly,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({
+        title: "Success",
+        description: "SMS settings saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save SMS settings",
+        variant: "destructive",
+      });
+    },
+  });
+
   const testEmailNotification = async () => {
     setTestEmailLoading(true);
     try {
@@ -190,6 +249,25 @@ export default function Settings() {
       });
     } finally {
       setTestEmailLoading(false);
+    }
+  };
+
+  const testSMSNotification = async () => {
+    setTestSMSLoading(true);
+    try {
+      const response = await apiRequest("POST", "/api/settings/test-sms");
+      toast({
+        title: "Success",
+        description: response.message || "Test SMS sent successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to send test SMS",
+        variant: "destructive",
+      });
+    } finally {
+      setTestSMSLoading(false);
     }
   };
 
@@ -307,8 +385,9 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="email" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="email">Email</TabsTrigger>
+          <TabsTrigger value="sms">SMS</TabsTrigger>
           <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
@@ -428,6 +507,122 @@ export default function Settings() {
                       <Save className="mr-2 h-4 w-4" />
                     )}
                     Save Email Settings
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sms" className="space-y-6">
+          <Card data-testid="card-sms-settings">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Phone className="mr-2 h-5 w-5" />
+                SMS Notifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSMSSubmit((data) => saveSMSSettings.mutate(data))} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Enable SMS Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receive SMS alerts when websites go down or come back up
+                      </p>
+                    </div>
+                    <Switch
+                      checked={watchSMS("enabled")}
+                      onCheckedChange={(checked) => setSMSValue("enabled", checked)}
+                      data-testid="switch-sms-enabled"
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="phoneNumber">Phone Number</Label>
+                      <Input
+                        id="phoneNumber"
+                        type="tel"
+                        placeholder="+1234567890"
+                        {...registerSMS("phoneNumber", {
+                          required: "Phone number is required",
+                          pattern: {
+                            value: /^\+?[\d\s\-\(\)]+$/,
+                            message: "Enter a valid phone number"
+                          }
+                        })}
+                        data-testid="input-phone-number"
+                      />
+                      {smsErrors.phoneNumber && (
+                        <p className="text-sm text-destructive">
+                          {smsErrors.phoneNumber.message}
+                        </p>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        Include country code (e.g., +1 for US)
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Critical Alerts Only</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Send SMS only for website down events (not recovery)
+                        </p>
+                      </div>
+                      <Switch
+                        checked={watchSMS("enableCriticalOnly")}
+                        onCheckedChange={(checked) => setSMSValue("enableCriticalOnly", checked)}
+                        data-testid="switch-sms-critical-only"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <h4 className="font-medium">Twilio SMS Service</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Configure Twilio credentials in environment variables
+                      </p>
+                    </div>
+                    <Badge variant="secondary">
+                      <AlertTriangle className="mr-1 h-3 w-3" />
+                      Setup Required
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-6 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={testSMSNotification}
+                    disabled={testSMSLoading || !watchSMS("enabled") || !watchSMS("phoneNumber")}
+                    data-testid="button-test-sms"
+                  >
+                    {testSMSLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <TestTube className="mr-2 h-4 w-4" />
+                    )}
+                    Send Test SMS
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={saveSMSSettings.isPending}
+                    data-testid="button-save-sms"
+                  >
+                    {saveSMSSettings.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save SMS Settings
                   </Button>
                 </div>
               </form>

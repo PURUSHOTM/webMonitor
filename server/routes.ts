@@ -222,6 +222,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/settings/sms", async (req, res) => {
+    try {
+      const { enableNotifications, phoneNumber, enableCriticalOnly } = req.body;
+      
+      // Save SMS settings
+      await storage.setSetting('sms.enableNotifications', enableNotifications?.toString() || 'false');
+      await storage.setSetting('sms.phoneNumber', phoneNumber || '');
+      await storage.setSetting('sms.enableCriticalOnly', enableCriticalOnly?.toString() || 'false');
+      
+      res.json({ success: true, message: "SMS settings saved successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save SMS settings" });
+    }
+  });
+
   app.post("/api/settings/test-email", async (req, res) => {
     try {
       // Import email service
@@ -277,6 +292,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Unable to send test email. Please check your email configuration." 
         });
       }
+    }
+  });
+
+  app.post("/api/settings/test-sms", async (req, res) => {
+    try {
+      // Import SMS service
+      const { sendSMS } = await import("./services/sms.js");
+      
+      // Get SMS settings from database
+      const phoneNumberSetting = await storage.getSetting('sms.phoneNumber');
+      
+      const phoneNumber = phoneNumberSetting?.value;
+      if (!phoneNumber) {
+        return res.status(400).json({ error: "Phone number not configured" });
+      }
+      
+      const success = await sendSMS({
+        to: phoneNumber,
+        body: "Test SMS from WebMonitor Pro - Your SMS notifications are working correctly!"
+      });
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: `Test SMS sent successfully to ${phoneNumber}` 
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: "Failed to send test SMS. Please check your Twilio configuration." 
+        });
+      }
+      
+    } catch (error) {
+      console.error("Test SMS error:", error);
+      res.status(500).json({ error: "Failed to send test SMS" });
     }
   });
 

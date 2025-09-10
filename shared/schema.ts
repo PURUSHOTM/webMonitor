@@ -28,6 +28,7 @@ export const notifications = pgTable("notifications", {
   type: text("type").notNull(), // 'down' | 'up' | 'slow'
   message: text("message").notNull(),
   emailSent: boolean("email_sent").notNull().default(false),
+  smsSent: boolean("sms_sent").notNull().default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 

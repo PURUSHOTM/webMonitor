@@ -2,6 +2,7 @@ import axios from 'axios';
 import cron from 'node-cron';
 import { storage } from '../storage';
 import { sendEmail, generateDowntimeEmail, generateUptimeRestoredEmail } from './email';
+import { sendSMS } from './sms';
 
 interface MonitoringCheck {
   websiteId: string;
@@ -110,18 +111,41 @@ class MonitorService {
         type: 'down',
         message: `${website.name} is down`,
         emailSent: false,
+        smsSent: false,
       });
 
-      // Send email notification
-      const emailContent = generateDowntimeEmail(website.name, website.url, error);
-      const emailSent = await sendEmail({
-        to: process.env.NOTIFICATION_EMAIL || 'admin@example.com',
-        from: process.env.FROM_EMAIL || 'notifications@webmonitor.com',
-        ...emailContent,
-      });
+      // Get notification settings
+      const emailEnabledSetting = await storage.getSetting('email.enableNotifications');
+      const smsEnabledSetting = await storage.getSetting('sms.enableNotifications');
+      const smsCriticalOnlySetting = await storage.getSetting('sms.enableCriticalOnly');
+      const notificationEmailSetting = await storage.getSetting('email.notificationEmail');
+      const smsNumberSetting = await storage.getSetting('sms.phoneNumber');
+      const fromEmailSetting = await storage.getSetting('email.fromEmail');
+      
+      // Send email notification if enabled
+      if (emailEnabledSetting?.value !== 'false') {
+        const emailContent = generateDowntimeEmail(website.name, website.url, error);
+        const emailSent = await sendEmail({
+          to: notificationEmailSetting?.value || process.env.NOTIFICATION_EMAIL || 'admin@example.com',
+          from: fromEmailSetting?.value || process.env.FROM_EMAIL || 'notifications@webmonitor.com',
+          ...emailContent,
+        });
 
-      if (emailSent) {
-        await storage.markNotificationEmailSent(notification.id);
+        if (emailSent) {
+          await storage.markNotificationEmailSent(notification.id);
+        }
+      }
+      
+      // Send SMS notification if enabled and phone number configured
+      if (smsEnabledSetting?.value === 'true' && smsNumberSetting?.value) {
+        const smsSent = await sendSMS({
+          to: smsNumberSetting.value,
+          body: `🚨 ALERT: ${website.name} is down. URL: ${website.url}${error ? ` Error: ${error}` : ''}`,
+        });
+        
+        if (smsSent) {
+          await storage.markNotificationSmsSent(notification.id);
+        }
       }
     }
 
@@ -132,18 +156,42 @@ class MonitorService {
         type: 'up',
         message: `${website.name} is back online`,
         emailSent: false,
+        smsSent: false,
       });
 
-      // Send email notification
-      const emailContent = generateUptimeRestoredEmail(website.name, website.url);
-      const emailSent = await sendEmail({
-        to: process.env.NOTIFICATION_EMAIL || 'admin@example.com',
-        from: process.env.FROM_EMAIL || 'notifications@webmonitor.com',
-        ...emailContent,
-      });
+      // Get notification settings
+      const emailEnabledSetting = await storage.getSetting('email.enableNotifications');
+      const smsEnabledSetting = await storage.getSetting('sms.enableNotifications');
+      const smsCriticalOnlySetting = await storage.getSetting('sms.enableCriticalOnly');
+      const notificationEmailSetting = await storage.getSetting('email.notificationEmail');
+      const smsNumberSetting = await storage.getSetting('sms.phoneNumber');
+      const fromEmailSetting = await storage.getSetting('email.fromEmail');
 
-      if (emailSent) {
-        await storage.markNotificationEmailSent(notification.id);
+      // Send email notification if enabled
+      if (emailEnabledSetting?.value !== 'false') {
+        const emailContent = generateUptimeRestoredEmail(website.name, website.url);
+        const emailSent = await sendEmail({
+          to: notificationEmailSetting?.value || process.env.NOTIFICATION_EMAIL || 'admin@example.com',
+          from: fromEmailSetting?.value || process.env.FROM_EMAIL || 'notifications@webmonitor.com',
+          ...emailContent,
+        });
+
+        if (emailSent) {
+          await storage.markNotificationEmailSent(notification.id);
+        }
+      }
+      
+      // Send SMS notification if enabled, phone number configured, and not critical-only mode
+      // For "up" events, only send if critical-only mode is disabled
+      if (smsEnabledSetting?.value === 'true' && smsNumberSetting?.value && smsCriticalOnlySetting?.value !== 'true') {
+        const smsSent = await sendSMS({
+          to: smsNumberSetting.value,
+          body: `✅ RECOVERY: ${website.name} is back online! URL: ${website.url}`,
+        });
+        
+        if (smsSent) {
+          await storage.markNotificationSmsSent(notification.id);
+        }
       }
     }
 

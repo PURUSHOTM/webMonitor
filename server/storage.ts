@@ -22,6 +22,7 @@ export interface IStorage {
   getNotifications(limit?: number): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationEmailSent(id: string): Promise<boolean>;
+  markNotificationSmsSent(id: string): Promise<boolean>;
   clearAllNotifications(): Promise<boolean>;
 
   // Settings operations
@@ -137,6 +138,7 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const notification: Notification = {
       emailSent: false,
+      smsSent: false,
       ...insertNotification,
       id,
       createdAt: new Date(),
@@ -150,6 +152,14 @@ export class MemStorage implements IStorage {
     if (!notification) return false;
 
     this.notifications.set(id, { ...notification, emailSent: true });
+    return true;
+  }
+
+  async markNotificationSmsSent(id: string): Promise<boolean> {
+    const notification = this.notifications.get(id);
+    if (!notification) return false;
+
+    this.notifications.set(id, { ...notification, smsSent: true });
     return true;
   }
 
@@ -248,6 +258,13 @@ export class DatabaseStorage implements IStorage {
   async markNotificationEmailSent(id: string): Promise<boolean> {
     const result = await db.update(schema.notifications)
       .set({ emailSent: true })
+      .where(eq(schema.notifications.id, id));
+    return result.rowCount > 0;
+  }
+
+  async markNotificationSmsSent(id: string): Promise<boolean> {
+    const result = await db.update(schema.notifications)
+      .set({ smsSent: true })
       .where(eq(schema.notifications.id, id));
     return result.rowCount > 0;
   }
