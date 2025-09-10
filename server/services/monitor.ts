@@ -16,6 +16,7 @@ interface MonitoringCheck {
 class MonitorService {
   private isRunning = false;
   private websiteStates = new Map<string, boolean>(); // Track previous state for notifications
+  private lastCheckTimes = new Map<string, number>(); // Track last check time for each website
   
   async checkWebsite(url: string): Promise<{ isUp: boolean; statusCode?: number; responseTime?: number; error?: string }> {
     const startTime = Date.now();
@@ -66,30 +67,40 @@ class MonitorService {
   async checkAllWebsites(): Promise<MonitoringCheck[]> {
     const websites = await storage.getWebsites();
     const checks: MonitoringCheck[] = [];
+    const currentTime = Date.now();
 
     for (const website of websites) {
-      const result = await this.checkWebsite(website.url);
+      const lastCheckTime = this.lastCheckTimes.get(website.id) || 0;
+      const intervalMs = (website.checkInterval || 5) * 60 * 1000; // Convert minutes to milliseconds
       
-      checks.push({
-        websiteId: website.id,
-        url: website.url,
-        isUp: result.isUp,
-        statusCode: result.statusCode,
-        responseTime: result.responseTime,
-        error: result.error,
-      });
+      // Only check if enough time has passed since last check
+      if (currentTime - lastCheckTime >= intervalMs) {
+        const result = await this.checkWebsite(website.url);
+        
+        checks.push({
+          websiteId: website.id,
+          url: website.url,
+          isUp: result.isUp,
+          statusCode: result.statusCode,
+          responseTime: result.responseTime,
+          error: result.error,
+        });
 
-      // Store monitoring result
-      await storage.createMonitoringResult({
-        websiteId: website.id,
-        statusCode: result.statusCode || null,
-        responseTime: result.responseTime || null,
-        isUp: result.isUp,
-        error: result.error || null,
-      });
+        // Store monitoring result
+        await storage.createMonitoringResult({
+          websiteId: website.id,
+          statusCode: result.statusCode || null,
+          responseTime: result.responseTime || null,
+          isUp: result.isUp,
+          error: result.error || null,
+        });
 
-      // Check for state changes and send notifications
-      await this.handleStateChange(website, result.isUp, result.error);
+        // Update last check time
+        this.lastCheckTimes.set(website.id, currentTime);
+
+        // Check for state changes and send notifications
+        await this.handleStateChange(website, result.isUp, result.error);
+      }
     }
 
     return checks;
