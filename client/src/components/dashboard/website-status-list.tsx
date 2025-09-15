@@ -16,6 +16,8 @@ interface WebsiteWithStatus extends Website {
 export function WebsiteStatusList() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [targetToDelete, setTargetToDelete] = React.useState<string | null>(null);
 
   const { data: websites = [], isLoading } = useQuery<Website[]>({
     queryKey: ["/api/websites"],
@@ -44,9 +46,15 @@ export function WebsiteStatusList() {
     }
   };
 
-  const deleteWebsite = async (websiteId: string) => {
+  const confirmDelete = (websiteId: string) => {
+    setTargetToDelete(websiteId);
+    setConfirmOpen(true);
+  };
+
+  const performDelete = async () => {
+    if (!targetToDelete) return;
     try {
-      await apiRequest("DELETE", `/api/websites/${websiteId}`);
+      await apiRequest("DELETE", `/api/websites/${targetToDelete}`);
       await queryClient.invalidateQueries({ queryKey: ["/api/websites"] });
       toast({
         title: "Success",
@@ -58,6 +66,9 @@ export function WebsiteStatusList() {
         description: "Failed to delete website",
         variant: "destructive",
       });
+    } finally {
+      setConfirmOpen(false);
+      setTargetToDelete(null);
     }
   };
 
