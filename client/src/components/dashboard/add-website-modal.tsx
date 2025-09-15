@@ -2,12 +2,23 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { insertWebsiteSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -85,17 +96,9 @@ export function AddWebsiteModal({ isOpen, onClose }: AddWebsiteModalProps) {
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Add New Website</DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              data-testid="button-close-modal"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Website Name</Label>
@@ -106,12 +109,15 @@ export function AddWebsiteModal({ isOpen, onClose }: AddWebsiteModalProps) {
               data-testid="input-website-name"
             />
             {errors.name && (
-              <p className="text-sm text-destructive" data-testid="error-website-name">
+              <p
+                className="text-sm text-destructive"
+                data-testid="error-website-name"
+              >
                 {errors.name.message}
               </p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="url">Website URL</Label>
             <Input
@@ -122,17 +128,22 @@ export function AddWebsiteModal({ isOpen, onClose }: AddWebsiteModalProps) {
               data-testid="input-website-url"
             />
             {errors.url && (
-              <p className="text-sm text-destructive" data-testid="error-website-url">
+              <p
+                className="text-sm text-destructive"
+                data-testid="error-website-url"
+              >
                 {errors.url.message}
               </p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label>Check Interval</Label>
             <Select
               value={watch("checkInterval")?.toString()}
-              onValueChange={(value) => setValue("checkInterval", parseInt(value))}
+              onValueChange={(value) =>
+                setValue("checkInterval", parseInt(value))
+              }
             >
               <SelectTrigger data-testid="select-check-interval">
                 <SelectValue placeholder="Select interval" />
@@ -146,19 +157,21 @@ export function AddWebsiteModal({ isOpen, onClose }: AddWebsiteModalProps) {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Checkbox
               id="enableNotifications"
               checked={watch("enableNotifications")}
-              onCheckedChange={(checked) => setValue("enableNotifications", checked as boolean)}
+              onCheckedChange={(checked) =>
+                setValue("enableNotifications", checked as boolean)
+              }
               data-testid="checkbox-enable-notifications"
             />
             <Label htmlFor="enableNotifications" className="text-sm">
               Enable email notifications
             </Label>
           </div>
-          
+
           <div className="flex justify-end space-x-3 pt-4">
             <Button
               type="button"
