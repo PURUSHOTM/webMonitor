@@ -12,3 +12,4 @@ const sql = neon(process.env.DATABASE_URL);
 export const db = drizzle(sql, { schema });
 
 export { schema };
+export { sql as rawSql };
