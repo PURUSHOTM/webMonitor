@@ -570,6 +570,19 @@ export default function Websites() {
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete website"
+        description="Are you sure you want to delete this website? This action cannot be undone."
+        confirmLabel="Delete"
+        intent="destructive"
+        onConfirm={() => {
+          if (websiteToDelete) deleteWebsiteMutation.mutate(websiteToDelete);
+          setConfirmOpen(false);
+          setWebsiteToDelete(null);
+        }}
+        onClose={() => { setConfirmOpen(false); setWebsiteToDelete(null); }}
+      />
     </div>
   );
 }
