@@ -784,7 +784,7 @@ export default function Settings() {
                         Display detailed performance metrics on dashboard
                       </p>
                     </div>
-                    <Switch data-testid="switch-advanced-metrics" />
+                    <Switch data-testid="switch-advanced-metrics" checked={showAdvancedMetrics} onCheckedChange={(checked) => toggleAdvanced(Boolean(checked))} />
                   </div>
                 </div>
               </div>
