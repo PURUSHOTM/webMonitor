@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,12 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Notification, Website } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Bell, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  Search, 
+import {
+  Bell,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Search,
   Filter,
   Mail,
   MailCheck,
@@ -28,6 +29,7 @@ import {
   Globe,
   Trash2
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function Notifications() {
   const [searchTerm, setSearchTerm] = useState("");
