@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/dashboard/sidebar";
 import { MetricsOverview } from "@/components/dashboard/metrics-overview";
 import { WebsiteStatusList } from "@/components/dashboard/website-status-list";
 import { UptimeChart } from "@/components/dashboard/uptime-chart";
