@@ -33,6 +33,7 @@ interface DashboardStats {
 export default function Analytics() {
   const [selectedWebsite, setSelectedWebsite] = useState<string>("all");
   const [timeRange, setTimeRange] = useState<string>("24h");
+  const { showAdvancedMetrics } = useUISettings();
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
