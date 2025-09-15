@@ -448,7 +448,7 @@ export default function Websites() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteWebsiteMutation.mutate(website.id)}
+                            onClick={() => { setWebsiteToDelete(website.id); setConfirmOpen(true); }}
                             disabled={deleteWebsiteMutation.isPending}
                             data-testid={`button-delete-${website.id}`}
                           >
