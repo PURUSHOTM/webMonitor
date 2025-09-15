@@ -93,6 +93,17 @@
 }
 
 @layer base {
+  /* Compact mode adjustments */
+  body[data-compact="true"] .p-6 { padding: 0.5rem !important; }
+  body[data-compact="true"] .p-12 { padding: 0.75rem !important; }
+  body[data-compact="true"] .px-6 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+  body[data-compact="true"] .py-4 { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
+  body[data-compact="true"] .text-3xl { font-size: 1.2rem !important; }
+  body[data-compact="true"] .text-2xl { font-size: 1.05rem !important; }
+  body[data-compact="true"] .space-y-6 > * + * { margin-top: 0.5rem !important; }
+  body[data-compact="true"] .h-64 { height: 12rem !important; }
+  body[data-compact="true"] .h-32 { height: 7rem !important; }
+
   * {
     @apply border-border;
   }
