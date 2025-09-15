@@ -62,10 +62,10 @@ interface UISettings {
 }
 
 export default function Settings() {
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const { theme, compactMode, showAdvancedMetrics, setTheme, toggleCompact, toggleAdvanced } = useUISettings();
   const [testEmailLoading, setTestEmailLoading] = useState(false);
   const [testSMSLoading, setTestSMSLoading] = useState(false);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
