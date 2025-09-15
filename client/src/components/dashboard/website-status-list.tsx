@@ -216,7 +216,7 @@ export function WebsiteStatusList() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteWebsite(website.id)}
+                        onClick={() => confirmDelete(website.id)}
                         data-testid={`button-delete-${website.id}`}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
