@@ -36,7 +36,8 @@ export default function Notifications() {
   const [typeFilter, setTypeFilter] = useState<"all" | "down" | "up">("all");
   const [emailFilter, setEmailFilter] = useState<"all" | "sent" | "pending">("all");
   const [selectedWebsite, setSelectedWebsite] = useState<string>("all");
-  
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
