@@ -53,7 +53,9 @@ export default function Websites() {
   const [editingWebsite, setEditingWebsite] = useState<Website | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "up" | "down">("all");
-  
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [websiteToDelete, setWebsiteToDelete] = useState<string | null>(null);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
