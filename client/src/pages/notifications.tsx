@@ -227,6 +227,16 @@ export default function Notifications() {
         </div>
       </div>
 
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Clear all notifications"
+        description="This will permanently remove all notifications. Are you sure you want to proceed?"
+        confirmLabel="Clear All"
+        intent="destructive"
+        onConfirm={() => { clearAllNotifications.mutate(); setConfirmOpen(false); }}
+        onClose={() => setConfirmOpen(false)}
+      />
+
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card data-testid="stat-total">
