@@ -11,10 +11,7 @@ export default function Dashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <Sidebar />
-      
-      <main className="flex-1 overflow-hidden">
+    <div className="space-y-0">
         <header className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -42,7 +39,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <div className="p-6 overflow-y-auto h-[calc(100vh-5rem)]">
+        <div className="overflow-y-auto">
           <MetricsOverview />
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -56,8 +53,6 @@ export default function Dashboard() {
 
           <RecentActivity />
         </div>
-      </main>
-
       <AddWebsiteModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
