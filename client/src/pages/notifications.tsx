@@ -215,7 +215,7 @@ export default function Notifications() {
           </Button>
           {notifications.length > 0 && (
             <Button
-              onClick={() => clearAllNotifications.mutate()}
+              onClick={() => setConfirmOpen(true)}
               variant="destructive"
               disabled={clearAllNotifications.isPending}
               data-testid="button-clear-all"
