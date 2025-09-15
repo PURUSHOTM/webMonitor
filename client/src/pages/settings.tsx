@@ -281,31 +281,9 @@ export default function Settings() {
   };
 
   const toggleTheme = (newTheme: "light" | "dark" | "system") => {
+    // Delegate to UISettings provider
     setTheme(newTheme);
-    
-    // Update the document class
-    const root = document.documentElement;
-    root.classList.remove("light", "dark");
-    
-    if (newTheme === "dark") {
-      root.classList.add("dark");
-    } else if (newTheme === "light") {
-      root.classList.add("light");
-    } else {
-      // System theme
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if (prefersDark) {
-        root.classList.add("dark");
-      }
-    }
-
-    // Save to localStorage
-    localStorage.setItem("theme", newTheme);
-    
-    toast({
-      title: "Success",
-      description: "Theme updated successfully",
-    });
+    toast({ title: "Success", description: "Theme updated successfully" });
   };
 
   // Calculate system statistics
