@@ -38,6 +38,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Ensure database is initialized before routes
+  try {
+    const { initDatabase } = await import("./init-db");
+    await initDatabase();
+  } catch (e) {
+    log("database init error, continuing: " + (e as Error).message);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
