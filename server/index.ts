@@ -40,7 +40,7 @@ app.use((req, res, next) => {
 (async () => {
   // Ensure database is initialized before routes
   try {
-    const { initDatabase } = await import("./init-db.js");
+    const { initDatabase } = await import("./init-db");
     await initDatabase();
   } catch (e) {
     log("database init error, continuing: " + (e as Error).message);
