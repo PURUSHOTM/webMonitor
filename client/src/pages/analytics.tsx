@@ -383,6 +383,28 @@ export default function Analytics() {
         </Card>
       </div>
 
+      {showAdvancedMetrics && (
+        <Card data-testid="card-advanced-metrics">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-medium mb-2">Advanced Metrics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Checks</p>
+                <p className="text-xl font-bold">{metrics.totalChecks}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Successful Checks</p>
+                <p className="text-xl font-bold">{metrics.successfulChecks}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Failed Checks</p>
+                <p className="text-xl font-bold">{metrics.failedChecks}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="overview" className="w-full">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
