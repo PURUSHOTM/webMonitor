@@ -774,7 +774,7 @@ export default function Settings() {
                         Use smaller spacing and condensed layouts
                       </p>
                     </div>
-                    <Switch data-testid="switch-compact-mode" />
+                    <Switch data-testid="switch-compact-mode" checked={compactMode} onCheckedChange={(checked) => toggleCompact(Boolean(checked))} />
                   </div>
 
                   <div className="flex items-center justify-between">
