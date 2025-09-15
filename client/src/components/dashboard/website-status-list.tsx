@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -188,8 +188,7 @@ export function WebsiteStatusList() {
                             ? "text-yellow-600" 
                             : ""
                         }`}
-                        data-testid={`text-response-time-${website.id}`}
-                      >
+                        data-testid={`text-response-time-${website.id}`}>
                         {website.latestResult?.responseTime 
                           ? `${website.latestResult.responseTime}ms`
                           : "-"
@@ -200,8 +199,7 @@ export function WebsiteStatusList() {
                     <div className="text-center">
                       <Badge 
                         variant={getStatusText(website.latestResult).variant}
-                        data-testid={`badge-status-${website.id}`}
-                      >
+                        data-testid={`badge-status-${website.id}`}>
                         {getStatusText(website.latestResult).text}
                       </Badge>
                       <p className="text-xs text-muted-foreground">Status</p>
@@ -236,6 +234,15 @@ export function WebsiteStatusList() {
           </div>
         )}
       </CardContent>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete website"
+        description="Are you sure you want to delete this website? This action cannot be undone."
+        confirmLabel="Delete"
+        intent="destructive"
+        onConfirm={performDelete}
+        onClose={() => { setConfirmOpen(false); setTargetToDelete(null); }}
+      />
     </Card>
   );
 }
