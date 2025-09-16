@@ -4,10 +4,22 @@ export async function initDatabase() {
   // Enable required extensions
   await rawSql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
 
+  // Users table
+  await rawSql`
+    CREATE TABLE IF NOT EXISTS users (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      email text NOT NULL UNIQUE,
+      password_hash text NOT NULL,
+      password_salt text NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    )
+  `;
+
   // Websites table
   await rawSql`
     CREATE TABLE IF NOT EXISTS websites (
       id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar,
       name text NOT NULL,
       url text NOT NULL,
       check_interval integer NOT NULL DEFAULT 5,
@@ -15,6 +27,10 @@ export async function initDatabase() {
       created_at timestamp NOT NULL DEFAULT now()
     )
   `;
+
+  // Backfill schema changes if table existed before
+  await rawSql`ALTER TABLE websites ADD COLUMN IF NOT EXISTS user_id varchar`;
+  await rawSql`CREATE INDEX IF NOT EXISTS idx_websites_user_id ON websites(user_id)`;
 
   // Monitoring results table
   await rawSql`
