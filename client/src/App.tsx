@@ -14,6 +14,8 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import { useLocation, Switch, Route } from "wouter";
 
+import { useEffect } from "react";
+
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { data: me, isLoading } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -22,11 +24,14 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
   const [, navigate] = useLocation();
 
+  useEffect(() => {
+    if (!isLoading && !me) {
+      navigate("/login");
+    }
+  }, [isLoading, me, navigate]);
+
   if (isLoading) return <div className="p-6">Loading...</div>;
-  if (!me) {
-    navigate("/login");
-    return null;
-  }
+  if (!me) return null;
   return <>{children}</>;
 }
 
