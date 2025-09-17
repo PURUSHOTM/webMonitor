@@ -183,8 +183,7 @@ export function setupAuth(app: Express) {
     const authHeader = (req.headers.authorization || "") as string;
     if (authHeader.startsWith("Bearer ")) {
       const token = authHeader.slice(7);
-      const secret = process.env.SESSION_SECRET || "";
-      const payload = verifyToken(token, secret);
+      const payload = verifyToken(token);
       if (payload) {
         const user = await findUserById(payload);
         if (user) return res.json({ id: user.id, email: user.email });
