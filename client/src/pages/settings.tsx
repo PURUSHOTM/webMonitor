@@ -97,6 +97,25 @@ export default function Settings() {
 
   // Update form values when settings are loaded
   useEffect(() => {
+    // Always prefer an explicit user preference stored in localStorage
+    const localTheme = (typeof window !== "undefined" ? localStorage.getItem("theme") : null) as
+      | "light"
+      | "dark"
+      | "system"
+      | null;
+
+    if (localTheme) {
+      setTheme(localTheme);
+      const root = document.documentElement;
+      root.classList.remove("light", "dark");
+      if (localTheme === "dark") root.classList.add("dark");
+      else if (localTheme === "light") root.classList.add("light");
+      else {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (prefersDark) root.classList.add("dark");
+      }
+    }
+
     if (savedSettings && Object.keys(savedSettings).length > 0) {
       resetEmailForm({
         fromEmail: savedSettings["email.fromEmail"] || "notifications@webmonitor.com",
@@ -104,20 +123,21 @@ export default function Settings() {
         enabled: savedSettings["email.enableNotifications"] !== "false",
       });
 
-      // Initialize appearance settings from saved settings
-      const savedTheme = (savedSettings["appearance.theme"] as "light" | "dark" | "system") || "system";
-      setTheme(savedTheme);
+      // Initialize appearance settings from saved settings only when local preference is not present
+      if (!localTheme) {
+        const savedTheme = (savedSettings["appearance.theme"] as "light" | "dark" | "system") || "system";
+        setTheme(savedTheme);
 
-      // Apply theme to document
-      const root = document.documentElement;
-      root.classList.remove("light", "dark");
-      if (savedTheme === "dark") {
-        root.classList.add("dark");
-      } else if (savedTheme === "light") {
-        root.classList.add("light");
-      } else {
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        if (prefersDark) root.classList.add("dark");
+        const root = document.documentElement;
+        root.classList.remove("light", "dark");
+        if (savedTheme === "dark") {
+          root.classList.add("dark");
+        } else if (savedTheme === "light") {
+          root.classList.add("light");
+        } else {
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (prefersDark) root.classList.add("dark");
+        }
       }
 
       setCompactMode(savedSettings["appearance.compactMode"] === "true");
