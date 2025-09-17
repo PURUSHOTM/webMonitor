@@ -36,8 +36,8 @@ export default function Register() {
       }
 
       if (ok) {
-        await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        navigate("/dashboard");
+        // Force a full page navigation so the browser sends stored cookies reliably
+        window.location.href = "/dashboard";
       } else {
         alert("Registration succeeded but session couldn't be verified. Please try logging in.");
       }
