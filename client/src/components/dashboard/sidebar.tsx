@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: TrendingUp, current: true },
+  { name: "Dashboard", href: "/dashboard", icon: TrendingUp, current: true },
   { name: "Websites", href: "/websites", icon: Globe, current: false },
   { name: "Analytics", href: "/analytics", icon: BarChart3, current: false },
   { name: "Notifications", href: "/notifications", icon: Bell, current: false },
@@ -65,7 +65,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
         <nav className="space-y-2">
           {navigation.map((item) => {
-            const isActive = location === item.href || (item.href === "/" && location === "/dashboard");
+            const isActive = location === item.href;
             return (
               <Link
                 key={item.name}
@@ -86,6 +86,19 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             );
           })}
         </nav>
+      </div>
+      <div className={cn("p-4", collapsed ? "px-2" : "px-6") }>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            // clear token first
+            try { localStorage.removeItem("auth.token"); } catch (e) {}
+            await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+            window.location.href = "/login";
+          }}
+        >
+          <Button variant="outline" className={cn("w-full", collapsed ? "px-2" : "")}>Logout</Button>
+        </form>
       </div>
     </aside>
   );

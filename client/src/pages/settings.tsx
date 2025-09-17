@@ -64,7 +64,9 @@ export default function Settings() {
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
   const [testEmailLoading, setTestEmailLoading] = useState(false);
   const [testSMSLoading, setTestSMSLoading] = useState(false);
-  
+  const [compactMode, setCompactMode] = useState(false);
+  const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -95,12 +97,51 @@ export default function Settings() {
 
   // Update form values when settings are loaded
   useEffect(() => {
+    // Always prefer an explicit user preference stored in localStorage
+    const localTheme = (typeof window !== "undefined" ? localStorage.getItem("theme") : null) as
+      | "light"
+      | "dark"
+      | "system"
+      | null;
+
+    if (localTheme) {
+      setTheme(localTheme);
+      const root = document.documentElement;
+      root.classList.remove("light", "dark");
+      if (localTheme === "dark") root.classList.add("dark");
+      else if (localTheme === "light") root.classList.add("light");
+      else {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (prefersDark) root.classList.add("dark");
+      }
+    }
+
     if (savedSettings && Object.keys(savedSettings).length > 0) {
       resetEmailForm({
         fromEmail: savedSettings["email.fromEmail"] || "notifications@webmonitor.com",
         toEmail: savedSettings["email.notificationEmail"] || "",
         enabled: savedSettings["email.enableNotifications"] !== "false",
       });
+
+      // Initialize appearance settings from saved settings only when local preference is not present
+      if (!localTheme) {
+        const savedTheme = (savedSettings["appearance.theme"] as "light" | "dark" | "system") || "system";
+        setTheme(savedTheme);
+
+        const root = document.documentElement;
+        root.classList.remove("light", "dark");
+        if (savedTheme === "dark") {
+          root.classList.add("dark");
+        } else if (savedTheme === "light") {
+          root.classList.add("light");
+        } else {
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (prefersDark) root.classList.add("dark");
+        }
+      }
+
+      setCompactMode(savedSettings["appearance.compactMode"] === "true");
+      setShowAdvancedMetrics(savedSettings["appearance.showAdvancedMetrics"] === "true");
     }
   }, [savedSettings, resetEmailForm]);
 
@@ -279,13 +320,13 @@ export default function Settings() {
     saveMonitoringSettings.mutate(data);
   };
 
-  const toggleTheme = (newTheme: "light" | "dark" | "system") => {
+  const toggleTheme = async (newTheme: "light" | "dark" | "system") => {
     setTheme(newTheme);
-    
+
     // Update the document class
     const root = document.documentElement;
     root.classList.remove("light", "dark");
-    
+
     if (newTheme === "dark") {
       root.classList.add("dark");
     } else if (newTheme === "light") {
@@ -300,11 +341,26 @@ export default function Settings() {
 
     // Save to localStorage
     localStorage.setItem("theme", newTheme);
-    
-    toast({
-      title: "Success",
-      description: "Theme updated successfully",
-    });
+
+    // Persist appearance settings to the server
+    try {
+      await apiRequest("PUT", "/api/settings/appearance", {
+        theme: newTheme,
+        compactMode: compactMode?.toString(),
+        showAdvancedMetrics: showAdvancedMetrics?.toString(),
+      });
+
+      toast({
+        title: "Success",
+        description: "Theme updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to persist theme setting",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate system statistics
@@ -795,7 +851,19 @@ export default function Settings() {
                         Use smaller spacing and condensed layouts
                       </p>
                     </div>
-                    <Switch data-testid="switch-compact-mode" />
+                    <Switch
+                    checked={compactMode}
+                    onCheckedChange={async (checked) => {
+                      setCompactMode(checked);
+                      try {
+                        await apiRequest("PUT", "/api/settings/appearance", { compactMode: checked });
+                        toast({ title: "Success", description: "Compact mode updated" });
+                      } catch (err) {
+                        toast({ title: "Error", description: "Failed to save compact mode", variant: "destructive" });
+                      }
+                    }}
+                    data-testid="switch-compact-mode"
+                  />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -805,7 +873,19 @@ export default function Settings() {
                         Display detailed performance metrics on dashboard
                       </p>
                     </div>
-                    <Switch data-testid="switch-advanced-metrics" />
+                    <Switch
+                    checked={showAdvancedMetrics}
+                    onCheckedChange={async (checked) => {
+                      setShowAdvancedMetrics(checked);
+                      try {
+                        await apiRequest("PUT", "/api/settings/appearance", { showAdvancedMetrics: checked });
+                        toast({ title: "Success", description: "Advanced metrics setting updated" });
+                      } catch (err) {
+                        toast({ title: "Error", description: "Failed to save advanced metrics setting", variant: "destructive" });
+                      }
+                    }}
+                    data-testid="switch-advanced-metrics"
+                  />
                   </div>
                 </div>
               </div>
