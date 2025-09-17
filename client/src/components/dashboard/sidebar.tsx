@@ -91,6 +91,8 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            // clear token first
+            try { localStorage.removeItem("auth.token"); } catch (e) {}
             await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
             window.location.href = "/login";
           }}
