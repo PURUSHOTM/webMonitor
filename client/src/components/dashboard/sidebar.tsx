@@ -65,7 +65,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
         <nav className="space-y-2">
           {navigation.map((item) => {
-            const isActive = location === item.href || (item.href === "/" && location === "/dashboard");
+            const isActive = location === item.href;
             return (
               <Link
                 key={item.name}
