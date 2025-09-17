@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 
 interface LoginForm {
   email: string;
@@ -21,6 +22,8 @@ export default function Login() {
       body: JSON.stringify(values),
     });
     if (res.ok) {
+      // Invalidate /api/auth/me so RequireAuth refetches authenticated user
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       navigate("/dashboard");
     } else {
       const text = await res.text();
