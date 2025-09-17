@@ -33,6 +33,14 @@ function verifyPassword(password: string, salt: string, expectedHash: string) {
 }
 
 export function setupAuth(app: Express) {
+  // When running behind a proxy (platforms like Fly), enable trust proxy so
+  // secure and other proxy-dependent checks work correctly.
+  try {
+    app.set("trust proxy", 1);
+  } catch (e) {
+    // noop
+  }
+
   const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 
   app.use(
@@ -44,6 +52,8 @@ export function setupAuth(app: Express) {
       cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         sameSite: "lax",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
       },
     }),
   );
