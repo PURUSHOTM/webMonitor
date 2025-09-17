@@ -125,6 +125,12 @@ export function setupAuth(app: Express) {
             return next(saveErr);
           }
           console.log("[auth] login - session saved, sessionID:", req.sessionID);
+          try {
+            const sc = res.getHeader("set-cookie");
+            console.log("[auth] login - set-cookie header:", sc);
+          } catch (e) {
+            console.warn("[auth] could not read set-cookie header", e);
+          }
           // respond with user and session id for debugging (non-sensitive)
           return res.json({ user, sessionID: req.sessionID });
         });
