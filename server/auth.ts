@@ -107,7 +107,10 @@ export function setupAuth(app: Express) {
       if (!user) return res.status(401).json({ message: info?.message || "Unauthorized" });
       req.login(user, (loginErr) => {
         if (loginErr) return next(loginErr);
-        return res.json(user);
+        req.session?.save((saveErr) => {
+          if (saveErr) return next(saveErr);
+          return res.json(user);
+        });
       });
     })(req, res, next);
   });
