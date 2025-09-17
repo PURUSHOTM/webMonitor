@@ -22,27 +22,34 @@ export default function Login() {
       body: JSON.stringify(values),
     });
     if (res.ok) {
-      // Wait for session to be established and /api/auth/me to return authenticated user
-      const maxAttempts = 6;
-      let ok = false;
-      for (let i = 0; i < maxAttempts; i++) {
-        try {
-          const meRes = await fetch("/api/auth/me", { credentials: "include" });
-          if (meRes.ok) {
-            ok = true;
-            break;
-          }
-        } catch (e) {
-          // ignore
-        }
-        await new Promise((r) => setTimeout(r, 150));
-      }
-
-      if (ok) {
-        // Force a full page navigation so the browser sends stored cookies reliably
+      // Read response body to get token, then store it
+      const payload = await res.json().catch(() => null);
+      if (payload?.token) {
+        localStorage.setItem("auth.token", payload.token);
+        // full navigation to ensure headers and app state are refreshed
         window.location.href = "/dashboard";
       } else {
-        alert("Login succeeded but session couldn't be verified. Please try again.");
+        // fallback to polling /me (for session-cookie pathway)
+        const maxAttempts = 6;
+        let ok = false;
+        for (let i = 0; i < maxAttempts; i++) {
+          try {
+            const meRes = await fetch("/api/auth/me", { credentials: "include" });
+            if (meRes.ok) {
+              ok = true;
+              break;
+            }
+          } catch (e) {
+            // ignore
+          }
+          await new Promise((r) => setTimeout(r, 150));
+        }
+
+        if (ok) {
+          window.location.href = "/dashboard";
+        } else {
+          alert("Login succeeded but session couldn't be verified. Please try again.");
+        }
       }
     } else {
       const text = await res.text();
