@@ -161,8 +161,7 @@ export function setupAuth(app: Express) {
           }
 
           // Generate token and return to client so client can use Authorization header if cookies fail
-          const secret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
-          const token = createToken(user.id, secret);
+          const token = createToken(user.id);
 
           return res.json({ user, token, sessionID: req.sessionID });
         });
