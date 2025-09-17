@@ -22,8 +22,25 @@ export default function Register() {
       body: JSON.stringify(values),
     });
     if (res.ok) {
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      navigate("/dashboard");
+      const maxAttempts = 6;
+      let ok = false;
+      for (let i = 0; i < maxAttempts; i++) {
+        try {
+          const meRes = await fetch("/api/auth/me", { credentials: "include" });
+          if (meRes.ok) {
+            ok = true;
+            break;
+          }
+        } catch (e) {}
+        await new Promise((r) => setTimeout(r, 150));
+      }
+
+      if (ok) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        navigate("/dashboard");
+      } else {
+        alert("Registration succeeded but session couldn't be verified. Please try logging in.");
+      }
     } else {
       const text = await res.text();
       alert(text || "Registration failed");
