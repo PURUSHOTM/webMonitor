@@ -254,6 +254,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Appearance settings
+  app.put("/api/settings/appearance", ensureAuth, async (req, res) => {
+    try {
+      const { theme, compactMode, showAdvancedMetrics } = req.body;
+
+      await storage.setSetting('appearance.theme', theme || 'system');
+      await storage.setSetting('appearance.compactMode', (compactMode !== undefined ? compactMode : false).toString());
+      await storage.setSetting('appearance.showAdvancedMetrics', (showAdvancedMetrics !== undefined ? showAdvancedMetrics : false).toString());
+
+      res.json({ success: true, message: "Appearance settings saved successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save appearance settings" });
+    }
+  });
+
   app.post("/api/settings/test-email", ensureAuth, async (req, res) => {
     try {
       const { sendEmail } = await import("./services/email.js");
