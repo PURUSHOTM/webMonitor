@@ -22,24 +22,30 @@ export default function Register() {
       body: JSON.stringify(values),
     });
     if (res.ok) {
-      const maxAttempts = 6;
-      let ok = false;
-      for (let i = 0; i < maxAttempts; i++) {
-        try {
-          const meRes = await fetch("/api/auth/me", { credentials: "include" });
-          if (meRes.ok) {
-            ok = true;
-            break;
-          }
-        } catch (e) {}
-        await new Promise((r) => setTimeout(r, 150));
-      }
-
-      if (ok) {
-        // Force a full page navigation so the browser sends stored cookies reliably
+      // Read response body to get token
+      const payload = await res.json().catch(() => null);
+      if (payload?.token) {
+        localStorage.setItem("auth.token", payload.token);
         window.location.href = "/dashboard";
       } else {
-        alert("Registration succeeded but session couldn't be verified. Please try logging in.");
+        const maxAttempts = 6;
+        let ok = false;
+        for (let i = 0; i < maxAttempts; i++) {
+          try {
+            const meRes = await fetch("/api/auth/me", { credentials: "include" });
+            if (meRes.ok) {
+              ok = true;
+              break;
+            }
+          } catch (e) {}
+          await new Promise((r) => setTimeout(r, 150));
+        }
+
+        if (ok) {
+          window.location.href = "/dashboard";
+        } else {
+          alert("Registration succeeded but session couldn't be verified. Please try logging in.");
+        }
       }
     } else {
       const text = await res.text();
