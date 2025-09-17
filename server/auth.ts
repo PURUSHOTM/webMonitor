@@ -142,7 +142,7 @@ export function setupAuth(app: Express) {
         if (loginErr) return next(loginErr);
         // debug log - show incoming cookies and session id
         console.log("[auth] login - incoming cookies:", req.headers.cookie, "sessionID before save:", req.sessionID);
-        req.session?.save((saveErr) => {
+          req.session?.save((saveErr) => {
           if (saveErr) {
             console.error("[auth] session save error:", saveErr);
             return next(saveErr);
@@ -154,8 +154,12 @@ export function setupAuth(app: Express) {
           } catch (e) {
             console.warn("[auth] could not read set-cookie header", e);
           }
-          // respond with user and session id for debugging (non-sensitive)
-          return res.json({ user, sessionID: req.sessionID });
+
+          // Generate token and return to client so client can use Authorization header if cookies fail
+          const secret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+          const token = createToken(user.id, secret);
+
+          return res.json({ user, token, sessionID: req.sessionID });
         });
       });
     })(req, res, next);
