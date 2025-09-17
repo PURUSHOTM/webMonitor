@@ -90,7 +90,11 @@ export function setupAuth(app: Express) {
       const newUser = { id: inserted[0].id, email: inserted[0].email } as PublicUser;
       req.login(newUser, (err) => {
         if (err) return res.status(500).json({ message: "Login failed" });
-        return res.json(newUser);
+        // Ensure session is saved to store before sending response
+        req.session?.save((saveErr) => {
+          if (saveErr) return res.status(500).json({ message: "Login failed" });
+          return res.json(newUser);
+        });
       });
     } catch (e: any) {
       return res.status(500).json({ message: e.message || "Registration failed" });
