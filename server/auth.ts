@@ -32,6 +32,29 @@ function verifyPassword(password: string, salt: string, expectedHash: string) {
   return crypto.timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(expectedHash, "hex"));
 }
 
+// Simple HMAC token implementation to avoid cookie/session issues across proxies.
+function createToken(payload: string, secret: string, expiresInSeconds = 60 * 60 * 24 * 30) {
+  const expires = Math.floor(Date.now() / 1000) + expiresInSeconds;
+  const data = `${payload}.${expires}`;
+  const sig = crypto.createHmac("sha256", secret).update(data).digest("hex");
+  return `${Buffer.from(data).toString("base64")}.${sig}`;
+}
+
+function verifyToken(token: string, secret: string) {
+  try {
+    const [b64, sig] = token.split(".");
+    const data = Buffer.from(b64, "base64").toString("utf8");
+    const expectedSig = crypto.createHmac("sha256", secret).update(data).digest("hex");
+    if (!crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(sig))) return null;
+    const [payload, expiresStr] = data.split(".");
+    const expires = parseInt(expiresStr, 10);
+    if (Math.floor(Date.now() / 1000) > expires) return null;
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
 export function setupAuth(app: Express) {
   // When running behind a proxy (platforms like Fly), enable trust proxy so
   // secure and other proxy-dependent checks work correctly.
