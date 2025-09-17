@@ -129,8 +129,7 @@ export function setupAuth(app: Express) {
         // Ensure session is saved to store before sending response
         req.session?.save((saveErr) => {
           if (saveErr) return res.status(500).json({ message: "Login failed" });
-          const secret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
-          const token = createToken(newUser.id, secret);
+          const token = createToken(newUser.id);
           return res.json({ user: newUser, token });
         });
       });
