@@ -169,8 +169,21 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/auth/me", (req, res) => {
+  app.get("/api/auth/me", async (req, res) => {
     console.log("[auth] /me - cookies:", req.headers.cookie, "sessionID:", req.sessionID, "isAuthenticated:", req.isAuthenticated && req.isAuthenticated());
+
+    // Check Authorization Bearer token first
+    const authHeader = (req.headers.authorization || "") as string;
+    if (authHeader.startsWith("Bearer ")) {
+      const token = authHeader.slice(7);
+      const secret = process.env.SESSION_SECRET || "";
+      const payload = verifyToken(token, secret);
+      if (payload) {
+        const user = await findUserById(payload);
+        if (user) return res.json({ id: user.id, email: user.email });
+      }
+    }
+
     if (!req.isAuthenticated || !req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const user = req.user as PublicUser;
     res.json(user);
@@ -178,6 +191,19 @@ export function setupAuth(app: Express) {
 }
 
 export function ensureAuth(req: Request, res: Response, next: NextFunction) {
+  // Allow bearer token or session cookie
+  const authHeader = (req.headers.authorization || "") as string;
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const secret = process.env.SESSION_SECRET || "";
+    const payload = verifyToken(token, secret);
+    if (payload) {
+      // attach user id to req for downstream
+      (req as any).user = { id: payload };
+      return next();
+    }
+  }
+
   if (req.isAuthenticated && req.isAuthenticated()) return next();
   return res.status(401).json({ message: "Unauthorized" });
 }
