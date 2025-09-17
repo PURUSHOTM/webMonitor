@@ -107,9 +107,16 @@ export function setupAuth(app: Express) {
       if (!user) return res.status(401).json({ message: info?.message || "Unauthorized" });
       req.login(user, (loginErr) => {
         if (loginErr) return next(loginErr);
+        // debug log - show incoming cookies and session id
+        console.log("[auth] login - incoming cookies:", req.headers.cookie, "sessionID before save:", req.sessionID);
         req.session?.save((saveErr) => {
-          if (saveErr) return next(saveErr);
-          return res.json(user);
+          if (saveErr) {
+            console.error("[auth] session save error:", saveErr);
+            return next(saveErr);
+          }
+          console.log("[auth] login - session saved, sessionID:", req.sessionID);
+          // respond with user and session id for debugging (non-sensitive)
+          return res.json({ user, sessionID: req.sessionID });
         });
       });
     })(req, res, next);
@@ -124,6 +131,7 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/auth/me", (req, res) => {
+    console.log("[auth] /me - cookies:", req.headers.cookie, "sessionID:", req.sessionID, "isAuthenticated:", req.isAuthenticated && req.isAuthenticated());
     if (!req.isAuthenticated || !req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const user = req.user as PublicUser;
     res.json(user);
