@@ -22,9 +22,28 @@ export default function Login() {
       body: JSON.stringify(values),
     });
     if (res.ok) {
-      // Invalidate /api/auth/me so RequireAuth refetches authenticated user
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      navigate("/dashboard");
+      // Wait for session to be established and /api/auth/me to return authenticated user
+      const maxAttempts = 6;
+      let ok = false;
+      for (let i = 0; i < maxAttempts; i++) {
+        try {
+          const meRes = await fetch("/api/auth/me", { credentials: "include" });
+          if (meRes.ok) {
+            ok = true;
+            break;
+          }
+        } catch (e) {
+          // ignore
+        }
+        await new Promise((r) => setTimeout(r, 150));
+      }
+
+      if (ok) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        navigate("/dashboard");
+      } else {
+        alert("Login succeeded but session couldn't be verified. Please try again.");
+      }
     } else {
       const text = await res.text();
       alert(text || "Login failed");
