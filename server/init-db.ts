@@ -68,9 +68,24 @@ export async function initDatabase() {
     )
   `;
 
+  // Rate limits table
+  await rawSql`
+    CREATE TABLE IF NOT EXISTS rate_limits (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL,
+      endpoint text NOT NULL,
+      count integer NOT NULL DEFAULT 0,
+      reset_time timestamp NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    )
+  `;
+
   // Indexes to improve queries
   await rawSql`CREATE INDEX IF NOT EXISTS idx_monitoring_results_website_id ON monitoring_results(website_id)`;
   await rawSql`CREATE INDEX IF NOT EXISTS idx_notifications_website_id ON notifications(website_id)`;
   await rawSql`CREATE INDEX IF NOT EXISTS idx_monitoring_results_checked_at ON monitoring_results(checked_at)`;
   await rawSql`CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at)`;
+  await rawSql`CREATE INDEX IF NOT EXISTS idx_rate_limits_user_id ON rate_limits(user_id)`;
+  await rawSql`CREATE INDEX IF NOT EXISTS idx_rate_limits_endpoint ON rate_limits(endpoint)`;
+  await rawSql`CREATE INDEX IF NOT EXISTS idx_rate_limits_reset_time ON rate_limits(reset_time)`;
 }

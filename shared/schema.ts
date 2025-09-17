@@ -48,6 +48,16 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
+
+export const rateLimits = pgTable("rate_limits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  endpoint: text("endpoint").notNull(),
+  count: integer("count").notNull().default(0),
+  resetTime: timestamp("reset_time").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 export const insertWebsiteSchema = createInsertSchema(websites).omit({
   id: true,
   createdAt: true,
@@ -69,6 +79,11 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
   updatedAt: true,
 });
 
+export const insertRateLimitSchema = createInsertSchema(rateLimits).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type Website = typeof websites.$inferSelect;
 export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
@@ -78,3 +93,5 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+export type RateLimit = typeof rateLimits.$inferSelect;
+export type InsertRateLimit = z.infer<typeof insertRateLimitSchema>;

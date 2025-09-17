@@ -4,13 +4,14 @@ import { storage } from "./storage";
 import { monitorService } from "./services/monitor";
 import { insertWebsiteSchema } from "@shared/schema";
 import { ensureAuth } from "./auth";
+import { rateLimit } from "./services/rate-limit";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Start monitoring service
   monitorService.startMonitoring();
 
   // Website routes (user-scoped)
-  app.get("/api/websites", ensureAuth, async (req, res) => {
+  app.get("/api/websites", ensureAuth, rateLimit({ category: "frequent" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const websites = await storage.getWebsitesByUser(userId);
@@ -20,7 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/websites", ensureAuth, async (req, res) => {
+  app.post("/api/websites", ensureAuth, rateLimit({ category: "intensive" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const validatedData = insertWebsiteSchema.parse(req.body);
@@ -31,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/websites/:id", ensureAuth, async (req, res) => {
+  app.get("/api/websites/:id", ensureAuth, rateLimit({ category: "frequent" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const website = await storage.getWebsiteForUser(req.params.id, userId);
@@ -44,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/websites/:id", ensureAuth, async (req, res) => {
+  app.put("/api/websites/:id", ensureAuth, rateLimit({ category: "frequent" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const validatedData = insertWebsiteSchema.parse(req.body);
@@ -58,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/websites/:id", ensureAuth, async (req, res) => {
+  app.delete("/api/websites/:id", ensureAuth, rateLimit({ category: "intensive" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const deleted = await storage.deleteWebsiteForUser(req.params.id, userId);
@@ -72,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Monitoring results routes (user-scoped)
-  app.get("/api/monitoring-results", ensureAuth, async (req, res) => {
+  app.get("/api/monitoring-results", ensureAuth, rateLimit({ category: "frequent" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const websiteId = req.query.websiteId as string | undefined;
@@ -89,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/monitoring-results/latest", ensureAuth, async (req, res) => {
+  app.get("/api/monitoring-results/latest", ensureAuth, rateLimit({ category: "frequent" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const results = await storage.getLatestMonitoringResultsForUser(userId);
@@ -99,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/websites/:id/monitoring-results", ensureAuth, async (req, res) => {
+  app.get("/api/websites/:id/monitoring-results", ensureAuth, rateLimit({ category: "frequent" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const website = await storage.getWebsiteForUser(req.params.id, userId);
@@ -113,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Notifications routes (user-scoped)
-  app.get("/api/notifications", ensureAuth, async (req, res) => {
+  app.get("/api/notifications", ensureAuth, rateLimit({ category: "frequent" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
@@ -125,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard statistics (user-scoped)
-  app.get("/api/dashboard/stats", ensureAuth, async (req, res) => {
+  app.get("/api/dashboard/stats", ensureAuth, rateLimit({ category: "frequent" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const websites = await storage.getWebsitesByUser(userId);
@@ -174,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Manual monitoring trigger - return only user's website results
-  app.post("/api/monitoring/check", ensureAuth, async (req, res) => {
+  app.post("/api/monitoring/check", ensureAuth, rateLimit({ category: "intensive" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const results = await monitorService.runSingleCheck();
@@ -187,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clear notifications (user-scoped)
-  app.delete("/api/notifications", ensureAuth, async (req, res) => {
+  app.delete("/api/notifications", ensureAuth, rateLimit({ category: "general" }), async (req, res) => {
     try {
       const userId = (req.user as any).id;
       await storage.clearNotificationsForUser(userId);
@@ -198,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings endpoints (global app settings, still require auth)
-  app.get("/api/settings", ensureAuth, async (_req, res) => {
+  app.get("/api/settings", ensureAuth, rateLimit({ category: "frequent" }), async (_req, res) => {
     try {
       const settings = await storage.getSettings();
       const settingsObject: Record<string, string> = {};
@@ -211,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/settings/email", ensureAuth, async (req, res) => {
+  app.put("/api/settings/email", ensureAuth, rateLimit({ category: "general" }), async (req, res) => {
     try {
       const { enableNotifications, fromEmail, notificationEmail } = req.body;
 
@@ -225,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/settings/monitoring", ensureAuth, async (req, res) => {
+  app.put("/api/settings/monitoring", ensureAuth, rateLimit({ category: "general" }), async (req, res) => {
     try {
       const { defaultCheckInterval, enableSlowResponseAlerts, slowResponseThreshold, retryAttempts } = req.body;
 
@@ -240,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/settings/sms", ensureAuth, async (req, res) => {
+  app.put("/api/settings/sms", ensureAuth, rateLimit({ category: "general" }), async (req, res) => {
     try {
       const { enableNotifications, phoneNumber, enableCriticalOnly } = req.body;
 
@@ -255,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Appearance settings
-  app.put("/api/settings/appearance", ensureAuth, async (req, res) => {
+  app.put("/api/settings/appearance", ensureAuth, rateLimit({ category: "general" }), async (req, res) => {
     try {
       const { theme, compactMode, showAdvancedMetrics } = req.body;
 
@@ -269,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/settings/test-email", ensureAuth, async (req, res) => {
+  app.post("/api/settings/test-email", ensureAuth, rateLimit({ category: "critical" }), async (req, res) => {
     try {
       const { sendEmail } = await import("./services/email.js");
 
@@ -324,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/settings/test-sms", ensureAuth, async (req, res) => {
+  app.post("/api/settings/test-sms", ensureAuth, rateLimit({ category: "critical" }), async (req, res) => {
     try {
       const { sendSMS } = await import("./services/sms.js");
 

@@ -9,7 +9,7 @@ import Analytics from "@/pages/analytics";
 import Notifications from "@/pages/notifications";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
-import Landing from "@/pages/landing";
+import Landing from "@/pages/landing-improved";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import { useLocation, Switch, Route } from "wouter";
