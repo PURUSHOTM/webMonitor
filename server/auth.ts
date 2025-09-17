@@ -33,14 +33,16 @@ function verifyPassword(password: string, salt: string, expectedHash: string) {
 }
 
 // Simple HMAC token implementation to avoid cookie/session issues across proxies.
-function createToken(payload: string, secret: string, expiresInSeconds = 60 * 60 * 24 * 30) {
+const TOKEN_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+
+function createToken(payload: string, secret = TOKEN_SECRET, expiresInSeconds = 60 * 60 * 24 * 30) {
   const expires = Math.floor(Date.now() / 1000) + expiresInSeconds;
   const data = `${payload}.${expires}`;
   const sig = crypto.createHmac("sha256", secret).update(data).digest("hex");
   return `${Buffer.from(data).toString("base64")}.${sig}`;
 }
 
-function verifyToken(token: string, secret: string) {
+function verifyToken(token: string, secret = TOKEN_SECRET) {
   try {
     const [b64, sig] = token.split(".");
     const data = Buffer.from(b64, "base64").toString("utf8");
