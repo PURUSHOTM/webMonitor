@@ -201,8 +201,7 @@ export function ensureAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = (req.headers.authorization || "") as string;
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
-    const secret = process.env.SESSION_SECRET || "";
-    const payload = verifyToken(token, secret);
+    const payload = verifyToken(token);
     if (payload) {
       // attach user id to req for downstream
       (req as any).user = { id: payload };
