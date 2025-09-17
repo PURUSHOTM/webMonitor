@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 
 interface RegisterForm {
   email: string;
@@ -21,6 +22,7 @@ export default function Register() {
       body: JSON.stringify(values),
     });
     if (res.ok) {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       navigate("/dashboard");
     } else {
       const text = await res.text();
